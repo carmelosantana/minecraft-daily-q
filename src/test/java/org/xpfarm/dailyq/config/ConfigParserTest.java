@@ -146,6 +146,56 @@ final class ConfigParserTest {
     }
 
     @Test
+    void unknownArchetypeInPoolThrowsWithKeyInMessage() {
+        String broken = VALID_YAML.replace("archetype: MINE", "archetype: BOGUS");
+        ConfigException e =
+                assertThrows(ConfigException.class, () -> ConfigParser.parse(sectionOf(broken)));
+        assertTrue(
+                e.getMessage().contains("BOGUS"),
+                "message should name the bad archetype: " + e.getMessage());
+    }
+
+    @Test
+    void unknownTierInPoolThrowsWithKeyInMessage() {
+        String broken =
+                VALID_YAML.replace(
+                        "archetype: MINE, target: IRON_ORE, count: 32, tier: easy",
+                        "archetype: MINE, target: IRON_ORE, count: 32, tier: bogus");
+        ConfigException e =
+                assertThrows(ConfigException.class, () -> ConfigParser.parse(sectionOf(broken)));
+        assertTrue(
+                e.getMessage().contains("bogus"), "message should name the bad tier: " + e.getMessage());
+    }
+
+    @Test
+    void unknownTargetMaterialForNonKillArchetypeThrowsWithKeyInMessage() {
+        String broken = VALID_YAML.replace("target: IRON_ORE", "target: NOT_A_MATERIAL");
+        ConfigException e =
+                assertThrows(ConfigException.class, () -> ConfigParser.parse(sectionOf(broken)));
+        assertTrue(
+                e.getMessage().contains("NOT_A_MATERIAL"),
+                "message should name the bad target: " + e.getMessage());
+    }
+
+    @Test
+    void unknownKillTargetThrowsWithKeyInMessage() {
+        String broken = VALID_YAML.replace("target: HOSTILE", "target: NOT_A_MOB");
+        ConfigException e =
+                assertThrows(ConfigException.class, () -> ConfigParser.parse(sectionOf(broken)));
+        assertTrue(
+                e.getMessage().contains("NOT_A_MOB"),
+                "message should name the bad kill target: " + e.getMessage());
+    }
+
+    @Test
+    void poolCountZeroThrows() {
+        String broken = VALID_YAML.replace("count: 32", "count: 0");
+        ConfigException e =
+                assertThrows(ConfigException.class, () -> ConfigParser.parse(sectionOf(broken)));
+        assertTrue(e.getMessage().contains("count"), "message should name the bad key: " + e.getMessage());
+    }
+
+    @Test
     void poolMissingStretchTierThrows() {
         String broken =
                 VALID_YAML.replace(

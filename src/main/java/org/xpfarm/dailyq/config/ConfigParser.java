@@ -235,7 +235,6 @@ public final class ConfigParser {
 
     // -- shared item-list parsing ------------------------------------------------------------
 
-    @SuppressWarnings("unchecked")
     private static List<Map<?, ?>> itemsOf(Map<?, ?> rewardMap, String context) throws ConfigException {
         Object items = rewardMap.get("items");
         if (!(items instanceof List<?> list)) {

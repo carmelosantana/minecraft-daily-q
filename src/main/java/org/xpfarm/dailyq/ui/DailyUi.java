@@ -203,16 +203,29 @@ public final class DailyUi implements Listener {
                         .warning("DailyUi: mailbox deposit for " + id + " skipped; plugin is disabled");
                 return stacks;
             }
+            java.util.concurrent.Future<List<ItemStack>> future = Bukkit.getScheduler()
+                    .callSyncMethod(plugin, () -> new ArrayList<>(player.getInventory().addItem(array).values()));
             try {
-                java.util.concurrent.Future<List<ItemStack>> future = Bukkit.getScheduler()
-                        .callSyncMethod(plugin, () -> new ArrayList<>(player.getInventory().addItem(array).values()));
                 return future.get(5, java.util.concurrent.TimeUnit.SECONDS);
             } catch (java.util.concurrent.TimeoutException e) {
+                // Cancel the queued sync task before giving up: if it is still queued (the common
+                // case for a merely stalled main thread) this stops it from ever running, so it
+                // cannot later addItem into the inventory while this row is returned as pending —
+                // which would deliver the reward now AND again on the next claim. If the task has
+                // already started running by the time cancel(true) is requested, Bukkit's
+                // scheduler cannot interrupt it mid-execution; it will still complete and deliver
+                // the items once. That residual race (task started in the same tick as the
+                // timeout) is far narrower than the pre-fix window, where the task ran and
+                // delivered on any later tick with certainty.
+                future.cancel(true);
                 plugin.getLogger()
                         .warning("DailyUi: mailbox deposit for " + id + " timed out waiting on main thread");
                 return stacks;
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                // Same reasoning as the timeout path: cancel so a still-queued task cannot run
+                // and deliver items after this reward is reported as pending.
+                future.cancel(true);
                 plugin.getLogger()
                         .warning("DailyUi: mailbox deposit for " + id + " interrupted while waiting on main thread");
                 return stacks;

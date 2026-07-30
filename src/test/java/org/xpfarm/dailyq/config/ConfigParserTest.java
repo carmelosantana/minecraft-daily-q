@@ -196,6 +196,17 @@ final class ConfigParserTest {
     }
 
     @Test
+    void anyWildcardTargetParsesSuccessfully() throws ConfigException {
+        String yaml = VALID_YAML.replace("target: IRON_ORE", "target: ANY");
+        DailyQConfig config = ConfigParser.parse(sectionOf(yaml));
+        DailyQConfig.RawTask task = config.tasks().pool().stream()
+                .filter(t -> t.id().equals("mine_iron"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("ANY", task.target());
+    }
+
+    @Test
     void poolMissingStretchTierThrows() {
         String broken =
                 VALID_YAML.replace(

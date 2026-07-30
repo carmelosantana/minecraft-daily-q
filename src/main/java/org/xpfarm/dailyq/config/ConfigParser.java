@@ -49,6 +49,13 @@ public final class ConfigParser {
     /** Mob-category keywords accepted as a {@code KILL} archetype target, alongside any entity type. */
     private static final Set<String> KILL_TARGET_CATEGORIES = Set.of("HOSTILE", "PASSIVE");
 
+    /**
+     * Wildcard target literal accepted for every archetype: matches any target of that archetype
+     * (see {@link org.xpfarm.dailyq.task.ProgressEvaluator}), e.g. "place any block" or "craft any
+     * tool" from the design spec.
+     */
+    private static final String ANY_TARGET = "ANY";
+
     private static final String SERVER_TIMEZONE = "server";
 
     private ConfigParser() {
@@ -153,9 +160,17 @@ public final class ConfigParser {
         return new RawTask(id, archetype, target, count, tier, reward);
     }
 
-    /** Confirms {@code target} resolves for its archetype: a block/item Material, or, for KILL, a mob category or entity type. */
+    /**
+     * Confirms {@code target} resolves for its archetype: a block/item Material, or, for KILL, a
+     * mob category or entity type. The {@link #ANY_TARGET} wildcard is accepted for every
+     * archetype, matching {@link org.xpfarm.dailyq.task.ProgressEvaluator}'s own
+     * case-insensitive check.
+     */
     private static void validateTarget(String archetype, String target, String context)
             throws ConfigException {
+        if (ANY_TARGET.equalsIgnoreCase(target)) {
+            return;
+        }
         if ("KILL".equals(archetype)) {
             if (KILL_TARGET_CATEGORIES.contains(target) || isEntityType(target)) {
                 return;

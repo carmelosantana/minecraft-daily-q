@@ -49,9 +49,10 @@ import org.xpfarm.dailyq.time.DayClock;
  * <p>This listener owns only the thin event → {@link ProgressSignal} mapping; the archetype/target
  * matching itself lives in the pure, unit-tested {@link ProgressEvaluator}. For each of today's
  * {@link DailyRotation#forDay} tasks it computes how much the event contributes, persists the
- * increment through {@link TaskProgressDao}, fires {@link DailyTaskCompletedEvent} the first time a
- * task crosses its count, and — once every one of the day's tasks is complete for that player —
- * grants the configured completion bonus to the mailbox exactly once.
+ * increment through {@link TaskProgressDao}, fires {@link DailyTaskCompletedEvent} and grants that
+ * task's own {@link TaskDefinition#reward()} the first time it crosses its count, and — once every
+ * one of the day's tasks is complete for that player — grants the configured completion bonus to
+ * the mailbox exactly once.
  *
  * <p><b>KILL category resolution.</b> A killed entity is turned into two candidate targets: its
  * specific {@code EntityType} name (e.g. {@code ZOMBIE}) and its mob category ({@code HOSTILE} if it
@@ -205,8 +206,14 @@ public final class TaskProgressListener implements Listener {
                     .thenAccept(newCount -> {
                         int previous = newCount - applied;
                         if (previous < def.count() && newCount >= def.count()) {
+                            // Exactly-once: TaskProgressDao.increment is atomic and DatabaseExecutor
+                            // serializes all DB writes on one thread, so exactly one increment ever
+                            // observes this threshold crossing. Reuse that single condition for both
+                            // the event fire and the per-task reward grant below, rather than
+                            // re-evaluating it separately.
                             runMain(() -> Bukkit.getPluginManager()
                                     .callEvent(new DailyTaskCompletedEvent(id, def.id())));
+                            mailbox.grant(id, def.reward(), day);
                         }
                     });
             pending.add(future);

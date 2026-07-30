@@ -260,12 +260,15 @@ Gate 8b/9 completed `2026-07-30` by `minecraft-plugin-release`.
 - [x] Release contains exactly one updater-matching JAR plus `SHA256SUMS.txt` and no `original-*` JAR. Assets: `daily-q-0.1.0.jar`, `SHA256SUMS.txt`.
 - [x] Downloaded release assets pass `sha256sum --check SHA256SUMS.txt`. `daily-q-0.1.0.jar: OK`.
 
+Gate 10 completed `2026-07-30` by `minecraft-plugin-updater`. Manifest commit
+`591bff4` in `carmelosantana/minecraft-plugin-updater`.
+
 ## 10. Updater
 
-- [ ] Updater manifest/tests cover repository, destination, anchored asset regex, legacy globs, enabled state, and optional pin.
-- [ ] Fresh install, upgrade, no-op, legacy archival, endpoint failure, and checksum failure behaviors pass.
-- [ ] Updater dry-run uses a disposable directory and never a production plugin directory.
-- [ ] Failure retains the installed JAR and default fail-open behavior permits Minecraft startup.
+- [x] Updater manifest/tests cover repository, destination, anchored asset regex, legacy globs, enabled state, and optional pin. Entry: `repo carmelosantana/minecraft-daily-q`, `destination daily-q.jar` (unique), `asset_regex ^daily-q-[0-9].*\.jar$`, `legacy_globs ["daily-q-[0-9]*.jar"]`, `enabled` absent (=true, default-install), no pin. `json.tool` OK; 11/11 unit tests pass.
+- [x] Fresh install, upgrade, no-op, legacy archival, endpoint failure, and checksum failure behaviors pass. Dry-run resolved `DailyQ: would install v0.1.0`; sandbox real-install → `installed v0.1.0`; second run → `already current (v0.1.0)`; stale destination replaced with the real JAR; `daily-q-0.0.9.jar` archived to backups. Endpoint/download/checksum failure + fail-open behavior covered by the updater unit suite.
+- [x] Updater dry-run uses a disposable directory and never a production plugin directory. Used `/tmp/minecraft-plugin-updater-dry-run` and `/tmp/dq-updater-sandbox` (all three flags — plugins-dir, state-file, backup-dir — inside the sandbox); never `/minecraft/plugins`.
+- [x] Failure retains the installed JAR and default fail-open behavior permits Minecraft startup. Verified by the updater unit suite (per-plugin failure warns and continues; no non-zero exit without `--strict`).
 
 ## 11. Deployment
 

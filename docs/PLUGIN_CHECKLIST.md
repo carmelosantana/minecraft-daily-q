@@ -226,7 +226,7 @@ passing, shaded `daily-q-0.1.0.jar` produced (gate 6 remains dev's to record for
 ## 8. CI/CD
 
 - [x] Identical standard plugin Actions workflow is installed with the required triggers, Temurin 25 build, artifact, checksum, and release behavior (`.github/workflows/build.yml`, byte-identical to the standard contract).
-- [ ] Successful main Actions run is recorded before tagging. — `minecraft-plugin-release` (gate 8b) records this after the first push's run completes.
+- [ ] Successful main Actions run is recorded before tagging. — First `main` run (id `30554542881`) already observed **green** at scaffold time; `minecraft-plugin-release` (gate 8b) formally records the run it tags against.
 - [x] Workflow permissions contain no broader access than the documented contract (`contents: write`, nothing more).
 
 ## 9. Release

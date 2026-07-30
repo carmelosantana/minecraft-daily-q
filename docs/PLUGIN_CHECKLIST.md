@@ -245,6 +245,23 @@ yet, so the following must be verified on `play.xpfarm.org` by the team and reco
   mailbox), including the mailbox claim depositing items to inventory and leaving partial fits
   pending.
 
+### 7b — full-roster matrix (2026-07-30)
+
+Run by `minecraft-plugin-matrix` after the updater manifest change that enrolled DailyQ (one of
+the three matrix triggers). Fresh-volume Legendary stack, all 17 updater-managed plugins installed
+`--from-releases`.
+
+- Manifest `enabled`: absent (= true, default-install). Default state on a fresh volume: installed.
+  Expected behavior: install and enable.
+- **Observed: DailyQ `v0.1.0` installed and enabled — green in RCON `plugins` alongside the full
+  roster.** Paper 26.1.2 build 74, Geyser-Spigot 2.11.0, Floodgate 2.2.5, ViaVersion 5.11.0 all
+  started together; Ollama/Umami degraded cleanly with endpoints absent; no SEVERE errors or
+  leaked secrets.
+- The rig reported `MATRIX FAILED 1/17` for **Pizza only**, which is a **false negative in the rig's
+  name-matching** (it expected `pizza`, the server registers `Pizza` per its `plugin.yml`): the
+  updater log shows `Pizza: installed v0.5.1` and RCON shows `Pizza` green. Not a DailyQ or
+  ecosystem defect. Recorded for the toolkit to fix and for `minecraft-plugin-handoff`.
+
 ## 8. CI/CD
 
 - [x] Identical standard plugin Actions workflow is installed with the required triggers, Temurin 25 build, artifact, checksum, and release behavior (`.github/workflows/build.yml`, byte-identical to the standard contract).

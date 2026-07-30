@@ -196,32 +196,54 @@ passing, shaded `daily-q-0.1.0.jar` produced (gate 6 remains dev's to record for
 - [x] Repository slug, artifact, releasable JAR, updater destination, and `plugin.yml` names are consistent.
 - [x] No secrets committed in source, defaults, tests, logs, history, or documentation.
 
+Gate 4/5/6/7a completed `2026-07-30` by `minecraft-plugin-dev`. Implemented via subagent-driven
+development (10 tasks, per-task review, final whole-branch review; ledger:
+`.superpowers/sdd/progress.md`). Plan: `docs/superpowers/plans/2026-07-30-daily-q-v0.1.0.md`.
+Final: `mvn clean verify` = BUILD SUCCESS, **133/133 tests**; shaded `daily-q-0.1.0.jar` inspected.
+
 ## 4. Compatibility
 
-- [ ] Java 25/Paper 26.1.2 build 74 compile succeeds and `plugin.yml` uses `api-version: '26.1'`, matching the API compiled against (see `PLUGIN_LIFECYCLE.md` §4 — a lower value opts the JAR into Paper's `Commodore` bytecode rewrites).
-- [ ] Hard dependencies, soft dependencies, optional APIs, and load ordering were reviewed and declared.
-- [ ] Geyser/Floodgate/ViaVersion review covers Bedrock-safe input, UI, inventory, identity, and protocol behavior.
+- [x] Java 25/Paper 26.1.2 build 74 compile succeeds and `plugin.yml` uses `api-version: '26.1'`, matching the API compiled against.
+- [x] Hard dependencies, soft dependencies, optional APIs, and load ordering were reviewed and declared. Hard: paper-api. Soft: `floodgate` (Bedrock forms). SQLite via `libraries:`. No FM/Pizza code dependency.
+- [x] Geyser/Floodgate/ViaVersion review covers Bedrock-safe input, UI, inventory, identity, and protocol behavior. Only `FloodgateBridge` imports `org.geysermc.*`, constructed behind an `isPluginEnabled`+availability guard; every Bedrock path falls back to the Java chest menu when Floodgate is absent. No Java-only chat-input prompts. Runtime: floodgate/Geyser/ViaVersion all started green alongside DailyQ.
 
 ## 5. External services
 
-- [ ] External integrations are disabled by default or require explicit configuration and have bounded timeouts.
-- [ ] Ollama/Umami-style external endpoints are optional and failure-tolerant when applicable.
-- [ ] Endpoint failure cannot fail server/plugin startup, and diagnostics redact secrets.
+- [x] No external integrations exist in v0.1 — trivially satisfied (no Ollama/Umami/HTTP calls).
+- [x] N/A — no external endpoints.
+- [x] N/A — startup cannot be affected by an absent external service because there are none. SQLite is local file I/O.
 
 ## 6. Tests and build
 
-- [ ] Unit tests cover separable logic, configuration, serialization, permissions, and failure paths where applicable.
-- [ ] `PluginDescriptorTest` parses `plugin.yml` and `config.yml` with SnakeYAML and asserts `name`, `main`, a `String`-typed `api-version`, a fully-substituted `version`, every command the code looks up, every permission the code checks, and the declared soft dependencies.
-- [ ] `mvn --batch-mode --no-transfer-progress clean verify` succeeds.
-- [ ] The shaded releasable JAR and embedded `plugin.yml` were inspected; `original-*` JARs are excluded.
+- [x] Unit tests cover separable logic: config parsing/validation, day-boundary, reward codec, SQLite DAOs, streak rules (table-driven), date-seeded rotation determinism, progress evaluation, mailbox partial-claim, command routing/permissions. 133 tests.
+- [x] `PluginDescriptorTest` parses `plugin.yml` and `config.yml` with SnakeYAML and asserts name, main, `String`-typed `api-version`, fully-substituted `version`, the `daily` command, `dailyq.use`/`dailyq.admin`, the `floodgate` softdepend, and the sqlite-jdbc `libraries:` coordinate matching pom.xml.
+- [x] `mvn --batch-mode --no-transfer-progress clean verify` succeeds (BUILD SUCCESS, 133/133).
+- [x] The shaded `daily-q-0.1.0.jar` and embedded `plugin.yml` were inspected; version resolved to `0.1.0`; no `org/bukkit`, `org/sqlite`, or `org/geysermc` bundled; no `original-*` shipped; no secrets.
 
 ## 7. Matrix
 
-- [ ] Fresh-volume [Legendary Java Minecraft Geyser Floodgate stack](https://github.com/TheRemote/Legendary-Java-Minecraft-Geyser-Floodgate) test covers every updater-managed plugin.
-- [ ] Each updater-managed plugin's manifest `enabled` value, default state, and expected fresh-volume behavior are recorded separately.
-- [ ] Paper, Geyser, Floodgate, and ViaVersion start successfully together.
-- [ ] Affected commands, permissions, persistence, and configuration reload were exercised over RCON with no server-wide hot reload.
-- [ ] Ollama and Umami unavailable-endpoint tests keep the server and plugins available when applicable.
+- [ ] 7b (full-roster matrix) — **out-of-band, not required for release** (`minecraft-plugin-matrix`, triggered by updater/stack changes). Not run in this dev cycle.
+- [ ] 7b — per-plugin fresh-volume behavior recorded separately: deferred to a matrix run.
+- [x] 7a: Paper, Geyser, Floodgate, and ViaVersion started successfully together on a fresh disposable Legendary stack; RCON `plugins` showed DailyQ + floodgate + Geyser-Spigot + ViaVersion all green.
+- [x] 7a: Commands and config reload exercised over RCON — `/daily` and `/daily tasks` from console gave the graceful player-only rejection (proving registration + execution-time sender/permission checks, i.e. dispatch-safety); `/daily admin reload` reloaded config; SQLite driver loaded at runtime via `libraries:`; plugin enabled cleanly with no exceptions or leaked secrets in the logs.
+- [x] N/A — no Ollama/Umami endpoints to negative-path test.
+
+### 7a — behaviors NOT reachable headlessly (gate-12 play-test obligations)
+
+No client attaches to the runtime stack by design, and the RCON test-harness plugin does not exist
+yet, so the following must be verified on `play.xpfarm.org` by the team and recorded at gate 12 by
+`minecraft-plugin-handoff`:
+
+- **Event→progress crediting under real gameplay**: that `BlockBreak` (MINE/HARVEST), `BlockPlace`,
+  `CraftItem`, `EntityDeath` (KILL, incl. HOSTILE/PASSIVE category resolution), and merchant-trade
+  clicks actually increment the matching daily task, fire `DailyTaskCompletedEvent`, and grant the
+  per-task reward and completion bonus.
+- **Login streak on real joins**: `PlayerJoinEvent` computing the streak, granting the calendar
+  reward + one-time make-up to the mailbox, firing `DailyStreakClaimedEvent`, and rendering the
+  "today" card.
+- **What a client renders**: the Java chest menu and the Bedrock Cumulus forms (hub/tasks/streak/
+  mailbox), including the mailbox claim depositing items to inventory and leaving partial fits
+  pending.
 
 ## 8. CI/CD
 

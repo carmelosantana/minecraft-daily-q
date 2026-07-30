@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.xpfarm</groupId>
+    <artifactId>daily-q</artifactId>
+    <version>0.1.0</version>
+    <packaging>jar</packaging>
+
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License v3.0 or later</name>
+            <url>https://www.gnu.org/licenses/agpl-3.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <name>DailyQ</name>
+    <description>Daily quests, login-streak rewards, and a claim mailbox — the first slice of the xpfarm questing system</description>
+    <url>https://xpfarm.org</url>
+
+    <developers>
+        <developer>
+            <name>Carmelo Santana</name>
+            <url>https://xpfarm.org</url>
+        </developer>
+    </developers>
+
+    <properties>
+        <maven.compiler.release>25</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <id>papermc-repo</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+        <repository>
+            <id>sonatype</id>
+            <url>https://oss.sonatype.org/content/groups/public/</url>
+        </repository>
+        <!--
+            Floodgate and Cumulus are published only here. Snapshots must be enabled: there is no
+            non-SNAPSHOT release of the Floodgate API at all, which is a build-reproducibility
+            concern only, since neither artifact is ever packaged into the shaded JAR.
+        -->
+        <repository>
+            <id>opencollab</id>
+            <url>https://repo.opencollab.dev/main/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>26.1.2.build.74-stable</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!--
+            Bedrock forms for the DailyQ hub, mailbox, tasks, and streak views. Provided scope
+            keeps Floodgate/Cumulus off the shaded JAR and out of the runtime as a hard
+            requirement: the classes importing org.geysermc.* are only ever constructed behind a
+            runtime isPluginEnabled/bridge-available guard, and every Bedrock player resolves to
+            the Java chest-menu fallback when Floodgate is absent. Cumulus is pinned explicitly
+            because the Floodgate API artifact no longer bundles it transitively.
+        -->
+        <dependency>
+            <groupId>org.geysermc.floodgate</groupId>
+            <artifactId>api</artifactId>
+            <version>2.2.5-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.geysermc.cumulus</groupId>
+            <artifactId>cumulus</artifactId>
+            <version>1.1.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!--
+            SQLite for streak, task-progress, and mailbox persistence. Declared in plugin.yml
+            `libraries:` and loaded at runtime rather than shaded, matching Farmers Market. If
+            shading is ever added, org.sqlite.* must NOT be relocated — relocation breaks the
+            driver's reflective and JNI paths (xerial/sqlite-jdbc#145). PluginDescriptorTest
+            asserts this coordinate carries the same version as the plugin.yml `libraries:` entry
+            so the two cannot drift.
+        -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.53.2.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.2</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <!--
+                                The SQLite JDBC driver is declared in plugin.yml `libraries:` and
+                                is deliberately NOT shaded. If that ever changes, org.sqlite.* must
+                                not be relocated — relocation breaks the driver's reflective and
+                                JNI paths (xerial/sqlite-jdbc#145).
+                            -->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
+</project>

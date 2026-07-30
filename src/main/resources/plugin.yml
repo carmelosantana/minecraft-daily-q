@@ -1,0 +1,43 @@
+name: DailyQ
+version: '${project.version}'
+main: org.xpfarm.dailyq.DailyQPlugin
+api-version: '26.1'
+author: Carmelo Santana
+website: https://xpfarm.org
+description: Daily quests, login-streak rewards, and a claim mailbox — the first slice of the xpfarm questing system
+
+# Floodgate is declared soft so Bedrock Cumulus forms activate when it is present and the plugin
+# still enables (serving the Java chest-menu fallback to everyone) when it is not. It is a
+# compile-time `provided` dependency, never shaded; any class importing org.geysermc.* is only
+# ever constructed behind a runtime isPluginEnabled/bridge-available guard.
+softdepend: [floodgate]
+
+# The SQLite JDBC driver is loaded at runtime rather than shaded, matching Farmers Market. Paper
+# still bundles org.xerial:sqlite-jdbc but marks that legacy, so the plugin owns its driver.
+# PluginDescriptorTest asserts this coordinate carries the same version as pom.xml so they cannot
+# drift.
+libraries:
+  - org.xerial:sqlite-jdbc:3.53.2.0
+
+# Commands and permissions are declared for the v0.1 surface the plan committed. Every player
+# subcommand is reached through the single `daily` root; menu integration (Pizza) dispatches this
+# same command with run-as: player. minecraft-plugin-dev tightens PluginDescriptorTest to what
+# the code actually looks up as it writes that code.
+commands:
+  daily:
+    description: Open DailyQ — today's tasks, login streak, and reward mailbox
+    usage: /<command> [tasks | streak | claim | admin]
+    aliases: [dq, quests]
+
+permissions:
+  dailyq.use:
+    description: Open DailyQ and use its player commands and menus
+    default: true
+  dailyq.admin:
+    description: All DailyQ administration
+    default: op
+    children:
+      dailyq.admin.reload: true
+  dailyq.admin.reload:
+    description: Reload the DailyQ configuration
+    default: op

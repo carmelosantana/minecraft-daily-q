@@ -1,0 +1,54 @@
+# DailyQ configuration.
+#
+# This is a starter config laid down at scaffold time. minecraft-plugin-dev (gate 4) completes the
+# full rotating task pool and the 28-entry login calendar alongside the code that reads them. The
+# structure here matches the design spec (docs/superpowers/specs/2026-07-30-daily-q-design.md) so
+# the descriptor test parses it and operators can see the shape of every knob.
+
+# When the server day rolls over. All streak and daily-task boundaries use this.
+reset:
+  hour: 0                 # 0-23, local hour the day resets
+  timezone: 'UTC'         # IANA zone id, or 'server' to use the JVM default
+
+# Daily tasks. A date-seeded selection of `per-day` tasks is shared by every player each day.
+tasks:
+  per-day: 3
+  # Reward granted to the mailbox when all of the day's tasks are complete. Larger than the sum of
+  # the per-task rewards, so finishing the set is worth more than cherry-picking.
+  completion-bonus:
+    items:
+      - { material: DIAMOND, amount: 2 }
+  # The pool the daily set is drawn from. Each entry: an archetype, its target, a count, and a
+  # tier (easy | medium | stretch). dev expands this to the full archetype set.
+  pool:
+    - { id: mine_iron, archetype: MINE, target: IRON_ORE, count: 32, tier: easy,
+        reward: { items: [ { material: BREAD, amount: 4 } ] } }
+    - { id: harvest_wheat, archetype: HARVEST, target: WHEAT, count: 64, tier: medium,
+        reward: { items: [ { material: EXPERIENCE_BOTTLE, amount: 4 } ] } }
+    - { id: kill_hostiles, archetype: KILL, target: HOSTILE, count: 20, tier: stretch,
+        reward: { items: [ { material: DIAMOND, amount: 1 } ] } }
+
+# Login-streak calendar. A looping N-day calendar; milestone days carry the largest rewards.
+login:
+  milestone-days: [7, 14, 28]
+  # dev completes the full 28-entry calendar. Each entry is a reward payload for that streak day.
+  calendar:
+    - { day: 1, reward: { items: [ { material: BREAD, amount: 2 } ] } }
+    - { day: 7, reward: { items: [ { material: DIAMOND, amount: 3 } ] } }
+    - { day: 14, reward: { items: [ { material: IRON_BLOCK, amount: 2 } ] } }
+    - { day: 28, reward: { items: [ { material: DIAMOND_BLOCK, amount: 1 } ] } }
+
+# Humane anti-burnout rules.
+streak:
+  forgiveness-misses: 1    # consecutive missed days tolerated before the streak steps down
+  make-up-enabled: true    # allow one retroactive make-up claim
+
+# Player-facing messaging toggles.
+messages:
+  today-card: true         # show the "today" card on the first daily join
+  toast: true              # show a Bedrock/Java toast pointing at the mailbox
+
+# Persistence. SQLite, matching Farmers Market's driver and busy-timeout conventions.
+storage:
+  db-file: 'daily-q.db'
+  busy-timeout-ms: 5000

@@ -248,15 +248,17 @@ yet, so the following must be verified on `play.xpfarm.org` by the team and reco
 ## 8. CI/CD
 
 - [x] Identical standard plugin Actions workflow is installed with the required triggers, Temurin 25 build, artifact, checksum, and release behavior (`.github/workflows/build.yml`, byte-identical to the standard contract).
-- [ ] Successful main Actions run is recorded before tagging. — First `main` run (id `30554542881`) already observed **green** at scaffold time; `minecraft-plugin-release` (gate 8b) formally records the run it tags against.
+- [x] Successful main Actions run is recorded before tagging. — Run `30563730090` (commit `67c27f9`) completed **success**; this is the exact commit `v0.1.0` tags.
 - [x] Workflow permissions contain no broader access than the documented contract (`contents: write`, nothing more).
+
+Gate 8b/9 completed `2026-07-30` by `minecraft-plugin-release`.
 
 ## 9. Release
 
-- [ ] Semantic version matches the POM, plugin metadata, and `v<version>` tag.
-- [ ] Successful tag Actions run and GitHub release are recorded.
-- [ ] Release contains exactly one updater-matching JAR plus `SHA256SUMS.txt` and no `original-*` JAR.
-- [ ] Downloaded release assets pass `sha256sum --check SHA256SUMS.txt`.
+- [x] Semantic version matches the POM, plugin metadata, and `v<version>` tag. `pom.xml` `0.1.0`, embedded `plugin.yml` `0.1.0`, tag `v0.1.0`.
+- [x] Successful tag Actions run and GitHub release are recorded. Tag run `30564089524` = success; release published at `https://github.com/carmelosantana/minecraft-daily-q/releases/tag/v0.1.0` (not draft/prerelease).
+- [x] Release contains exactly one updater-matching JAR plus `SHA256SUMS.txt` and no `original-*` JAR. Assets: `daily-q-0.1.0.jar`, `SHA256SUMS.txt`.
+- [x] Downloaded release assets pass `sha256sum --check SHA256SUMS.txt`. `daily-q-0.1.0.jar: OK`.
 
 ## 10. Updater
 

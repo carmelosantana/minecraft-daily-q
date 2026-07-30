@@ -190,8 +190,37 @@ public final class DailyUi implements Listener {
     private void claimMailbox(Player player) {
         UUID id = player.getUniqueId();
         Function<List<ItemStack>, List<ItemStack>> deposit = stacks -> {
-            Map<Integer, ItemStack> leftover = player.getInventory().addItem(stacks.toArray(new ItemStack[0]));
-            return new ArrayList<>(leftover.values());
+            // MailboxService.claim composes this closure over CompletableFutures backed by
+            // DatabaseExecutor, so it runs on the DB thread, never the main thread. Bukkit
+            // inventory access off the main thread is unsafe, so the actual addItem call is
+            // marshalled onto the main thread via the scheduler and awaited with a bounded
+            // timeout. Any failure to deliver (server stopping, timeout, interruption) is
+            // treated as a full miss: the entire input is returned as leftovers so the reward
+            // stays pending in the mailbox rather than being marked claimed without delivery.
+            ItemStack[] array = stacks.toArray(new ItemStack[0]);
+            if (!plugin.isEnabled()) {
+                plugin.getLogger()
+                        .warning("DailyUi: mailbox deposit for " + id + " skipped; plugin is disabled");
+                return stacks;
+            }
+            try {
+                java.util.concurrent.Future<List<ItemStack>> future = Bukkit.getScheduler()
+                        .callSyncMethod(plugin, () -> new ArrayList<>(player.getInventory().addItem(array).values()));
+                return future.get(5, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                plugin.getLogger()
+                        .warning("DailyUi: mailbox deposit for " + id + " timed out waiting on main thread");
+                return stacks;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                plugin.getLogger()
+                        .warning("DailyUi: mailbox deposit for " + id + " interrupted while waiting on main thread");
+                return stacks;
+            } catch (java.util.concurrent.ExecutionException e) {
+                plugin.getLogger()
+                        .warning("DailyUi: mailbox deposit for " + id + " failed on main thread: " + e.getCause());
+                return stacks;
+            }
         };
 
         mailbox.claim(id, deposit)

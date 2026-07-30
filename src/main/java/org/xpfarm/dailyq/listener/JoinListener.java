@@ -101,11 +101,19 @@ public final class JoinListener implements Listener {
     private void awardStreak(Player player, PlayerState state, StreakOutcome outcome, long today) {
         UUID id = player.getUniqueId();
         ItemReward reward = calendar.rewardForStreak(outcome.newStreak());
+        boolean makeUpUsed = state.makeUpUsed() || outcome.makeUpAvailable();
         PlayerState updated = new PlayerState(
-                id, outcome.newStreak(), today, state.makeUpUsed(), today);
+                id, outcome.newStreak(), today, makeUpUsed, today);
 
-        mailbox.grant(id, reward, today)
-                .thenCompose(v -> stateDao.put(updated))
+        CompletableFuture<Void> grants = mailbox.grant(id, reward, today);
+        if (outcome.makeUpAvailable()) {
+            // One-time retroactive make-up day: a separate catch-up reward for the day that was
+            // forgiven, granted alongside today's streak reward. makeUpUsed above ensures this can
+            // only ever fire once per streak (until the streak breaks/resets).
+            grants = grants.thenCompose(v -> mailbox.grant(id, calendar.rewardForStreak(outcome.newStreak()), today));
+        }
+
+        grants.thenCompose(v -> stateDao.put(updated))
                 .thenRun(() -> runMain(() -> {
                     Bukkit.getPluginManager().callEvent(new DailyStreakClaimedEvent(id, outcome.newStreak()));
                     if (todayCard) {

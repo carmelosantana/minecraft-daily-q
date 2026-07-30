@@ -270,11 +270,11 @@ public final class TaskProgressListener implements Listener {
 
     /**
      * Whether {@code entity} counts as a {@code HOSTILE} kill target. {@link Enemy} is the broad
-     * marker for aggressive mobs (it covers slimes, ghasts, phantoms, and bosses that are not
-     * {@link Monster}), with {@link Monster} kept as a belt-and-braces fallback.
+     * marker for aggressive mobs — it covers slimes, ghasts, phantoms, and bosses, and Paper's
+     * {@link Monster} interface already extends it, so checking {@code Enemy} alone is sufficient.
      */
     private static boolean isHostile(LivingEntity entity) {
-        return entity instanceof Enemy || entity instanceof Monster;
+        return entity instanceof Enemy;
     }
 
     private void runMain(Runnable task) {
